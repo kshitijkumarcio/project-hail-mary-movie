@@ -423,12 +423,12 @@ const ATF = () => {
             </p>
           </div>
           <div className="flex-1 flex justify-center">
-            <p className="uppercase font-mona-sans text-[12px] font-medium text-black/50">
+            <p className="uppercase font-mona-sans text-[12px] font-medium text-zinc-500">
               Welcome aboard
             </p>
           </div>
           <div className="flex flex-1 flex-col items-end">
-            <p className="text-black/50 text-[12px] font-mona-sans ">
+            <p className="text-zinc-500 text-[12px] font-mona-sans ">
               TIME TO ENGINE CUTOFF:{" "}
               <span className="font-semibold">{formatTime(timeLeft)}</span>
             </p>
@@ -437,7 +437,7 @@ const ATF = () => {
 
         <div className="flex justify-between w-full">
           <div className="gap-10 flex flex-col">
-            <p className="text-black/50 animate-pulse text-[12px] font-mona-sans ">
+            <p className="text-zinc-500 animate-pulse text-[12px] font-mona-sans ">
               APPROACHING: <span className="font-semibold">TAU CETI</span>
             </p>
             <p className="text-black text-[12px]  font-mona-sans ">
@@ -449,11 +449,11 @@ const ATF = () => {
           </div>
 
           <div className="flex flex-col items-end gap-10">
-            <p className="text-black/50 animate-pulse text-[12px] font-mona-sans ">
+            <p className="text-zinc-500 animate-pulse text-[12px] font-mona-sans ">
               ASTROPHAGE REMAINING:{" "}
               <span className="font-semibold">20,906 KG</span>
             </p>
-            <p className="text-black/50 text-[12px] animate-pulse font-mona-sans ">
+            <p className="text-zinc-500 text-[12px] animate-pulse font-mona-sans ">
               CONSUMPTION RATE: <span className="font-semibold">6.045 G/S</span>
             </p>
           </div>
@@ -463,7 +463,7 @@ const ATF = () => {
       {/* marquee */}
       <div className="absolute top-1/4 translate-y-3 w-full">
         <Marquee speed={0.05} direction={-1} reverse={true}>
-          <div className="flex gap-x-10 w-full">
+          <div className="flex gap-x-10 font-semibold w-full">
             <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">
               (Amaze <span className="-tracking-[6px]">------</span>)
             </p>
@@ -472,6 +472,12 @@ const ATF = () => {
             </p> <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">
               (Amaze <span className="-tracking-[6px]">------</span>)
             </p> <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">
+              (Amaze <span className="-tracking-[6px]">------</span>)
+            </p>
+            <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">
+              (Amaze <span className="-tracking-[6px]">------</span>)
+            </p>
+            <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">
               (Amaze <span className="-tracking-[6px]">------</span>)
             </p>
             <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">
@@ -491,8 +497,8 @@ const ATF = () => {
       </div>
 
       {/* message */}
-      <div className="absolute 2xl:top-[64svh] top-[65svh] left-1/2 -translate-x-1/2 flex flex-col justify-center gap-1 items-center">
-        <p className="text-[16px] font-mona-sans text-black/60 max-w-[500px] font-medium tracking-wide text-center">
+      <div className="absolute 2xl:top-[63.5svh] top-[64.5svh] left-1/2 -translate-x-1/2 flex flex-col justify-center gap-1 items-center">
+        <p className="text-lg font-mona-sans text-zinc-600 max-w-[540px] font-medium tracking-wide text-center">
           👋🏼 Hey there! We fellow Swapbookers are going to watch Project Hail
           Mary this weekend. Would you like to join us?
         </p>
@@ -500,7 +506,7 @@ const ATF = () => {
         <GsapScrollToButton
           targetId="voting-form"
           type="button"
-          className="bg-linear-to-br from-amber-400 via-black to-black cursor-pointer rounded-[8px] h-10 px-6 2xl:mt-11 mt-9 relative"
+          className="bg-linear-to-br from-amber-400 via-black to-black cursor-pointer rounded-[6px] h-11 px-6 2xl:mt-9.5 mt-8 relative"
         >
           <FlipTextButton maxHeight="max-h-10">
             <p
@@ -515,7 +521,7 @@ const ATF = () => {
         </GsapScrollToButton>
       </div>
 
-      <div className="absolute bottom-0 left-0 w-full h-20 bg-linear-to-t from-dull-white to-transparent"></div>
+      {/* <div className="absolute bottom-0 left-0 w-full h-20 bg-linear-to-t from-dull-white to-transparent"></div> */}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import VotingForm from "@/components/sections/voting-form";
 
 const HomePage = () => {
   return (
-    <div className="no-scrollbar min-h-[400svh] bg-dull-white">
+    <div className="no-scrollbar bg-dull-white">
       <ATF />
       <VotingForm />
     </div>

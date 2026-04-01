@@ -10,12 +10,12 @@ const Navbar = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-999 h-svh w-screen">
       <nav className="absolute pointer-events-auto bottom-5.5 h-20 left-1/2 -translate-x-1/2 flex items-center rounded-[8px] justify-center">
-        <div className="flex bg-black/40 p-2 rounded-[8px] justify-center items-center gap-2 backdrop-blur-md">
+        <div className="flex bg-black/40 p-1.5 rounded-[8px] justify-center items-center gap-1.5 backdrop-blur-md">
           <Link
             href="/home"
             prefetch={true}
             className={cn(
-              "h-10 px-4 flex justify-center items-center rounded-[4px] transition-all",
+              "h-8 px-4 flex justify-center items-center rounded-[4px] transition-all",
               pathname === "/home" || pathname === "/"
                 ? "bg-black/80"
                 : "hover:bg-black/20",
@@ -33,7 +33,7 @@ const Navbar = () => {
             href="/live-results"
             prefetch={true}
             className={cn(
-              "h-10 px-4 flex justify-center items-center rounded-[4px] transition-all",
+              "h-8 px-4 flex justify-center items-center rounded-[4px] transition-all",
               pathname === "/live-results"
                 ? "bg-black/80"
                 : "hover:bg-black/20",
