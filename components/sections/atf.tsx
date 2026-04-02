@@ -415,11 +415,11 @@ const ATF = () => {
       </div>
 
       {/* border elements */}
-      <div className="w-full flex flex-col justify-between h-screen px-6 py-6">
+      <div className="w-full flex flex-col justify-between h-screen px-16 py-6">
         <div className="flex justify-between">
           <div className="flex-1">
             <p className="text-black font-semibold -translate-y-2 text-[24px] font-mona-sans">
-              STRATT VATT
+              HAIL MARY
             </p>
           </div>
           <div className="flex-1 flex justify-center">
@@ -464,7 +464,7 @@ const ATF = () => {
       <div className="absolute top-1/4 translate-y-3 w-full">
         <Marquee speed={0.05} direction={-1} reverse={true}>
           <div className="flex gap-x-10 font-semibold w-full">
-            <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">
+            <p className="ml-10 text-black whitespace-nowrap font-mona-sans text-[60px]">
               (Amaze <span className="-tracking-[6px]">------</span>)
             </p>
             <p className="text-black whitespace-nowrap font-mona-sans text-[60px]">

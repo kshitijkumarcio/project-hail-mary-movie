@@ -25,6 +25,10 @@ export const metadata: Metadata = {
     "Let's figure out the best date and time, that works for everyone.",
 };
 
+import { ResponsiveGuard } from "@/components/responsive-guard";
+import { ConvexClientProvider } from "@/providers/ClientConvexProvider";
+import { GSAPProvider } from "@/providers/gsap-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,6 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "no-scrollbar",
         monaSans.variable,
@@ -40,13 +45,21 @@ export default function RootLayout({
         inter.variable,
       )}
     >
-      <body className="min-h-full flex flex-col no-scrollbar selection:text-white selection:bg-black">
-        <LenisProvider>
-          <TooltipProvider>
-            <Navbar />
-            {children}
-          </TooltipProvider>
-        </LenisProvider>
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col no-scrollbar selection:text-white selection:bg-black"
+      >
+        <GSAPProvider>
+          <LenisProvider>
+            <ConvexClientProvider>
+              <TooltipProvider>
+                <ResponsiveGuard />
+                <Navbar />
+                {children}
+              </TooltipProvider>
+            </ConvexClientProvider>
+          </LenisProvider>
+        </GSAPProvider>
       </body>
     </html>
   );
