@@ -54,6 +54,20 @@ export const getVoterByEmail = internalQuery({
   },
 });
 
+/**
+ * Count the total number of unique users who have cast their vote.
+ */
+export const getTotalVotedCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const voters = await ctx.db
+      .query("voters")
+      .withIndex("by_voted", (q) => q.eq("voted", true))
+      .collect();
+    return voters.length;
+  },
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MUTATIONS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,8 +106,8 @@ export const castVote = mutation({
     });
 
     // Increment vote counts for each chosen slot
-    for (const slotKey of args.selectedSlots) {
-      await ctx.runMutation(internal.showtimes.incrementSlotCount, { slotKey });
+    for (const slotId of args.selectedSlots) {
+      await ctx.runMutation(internal.showtimes.incrementSlotCount, { slotId });
     }
   },
 });
@@ -123,14 +137,14 @@ export const updateSelectedSlots = mutation({
     // Slots that were removed
     for (const slot of oldSlots) {
       if (!nextSlots.has(slot)) {
-        await ctx.runMutation(internal.showtimes.decrementSlotCount, { slotKey: slot });
+        await ctx.runMutation(internal.showtimes.decrementSlotCount, { slotId: slot });
       }
     }
 
     // Slots that were added
     for (const slot of nextSlots) {
       if (!oldSlots.has(slot)) {
-        await ctx.runMutation(internal.showtimes.incrementSlotCount, { slotKey: slot });
+        await ctx.runMutation(internal.showtimes.incrementSlotCount, { slotId: slot });
       }
     }
 

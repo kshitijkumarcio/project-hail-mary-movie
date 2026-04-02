@@ -54,10 +54,11 @@ export default function RootLayout({
           <LenisProvider>
             <ConvexClientProvider>
               <TooltipProvider>
-                <ResponsiveGuard />
-                <Navbar />
-                {children}
-                <Toaster />
+                <ResponsiveGuard>
+                  <Navbar />
+                  {children}
+                  <Toaster />
+                </ResponsiveGuard>
               </TooltipProvider>
             </ConvexClientProvider>
           </LenisProvider>

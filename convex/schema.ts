@@ -34,7 +34,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_voted", ["voted"]),
 
   
   // ── Denormalized vote counts (one document per showtime slot) ───────────────
@@ -47,15 +48,15 @@ export default defineSchema({
    *   e.g.  "Saturday, April 04|vr-mall|11.25 AM"
    */
   showtimeVoteCounts: defineTable({
-    /** Same composite key used in `voters.selectedSlots` */
-    slotKey: v.string(),
+    /** Unique ID made from venue+time+day slug */
+    slotId: v.string(),
 
-    /** Human-readable parts for display — avoids re-parsing slotKey */
+    /** Human-readable parts for display — avoids re-parsing slotId */
     date: v.string(),
     theaterId: v.string(),
     time: v.string(),
 
     /** Running total of voters who selected this slot */
     voteCount: v.number(),
-  }).index("by_slotKey", ["slotKey"]),
+  }).index("by_slotId", ["slotId"]),
 });

@@ -6,7 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Image from "next/image";
 import { toast } from "sonner";
-import { images, DAYS, THEATERS, SHOWTIMES_BY_THEATER } from "@/constants";
+import {
+  images,
+  DAYS,
+  THEATERS,
+  SHOWTIMES_BY_THEATER,
+  getSlotId,
+  ALL_SLOTS,
+} from "@/constants";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -22,10 +29,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import FlipTextButton from "../ui/flip-text-button";
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 
 // Types and Schema
 const formSchema = z.object({
@@ -51,19 +58,21 @@ const VotingForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const router = useRouter();
+  const { isAuthenticated } = useConvexAuth();
+  const [pendingVote, setPendingVote] = useState<FormValues | null>(null);
 
   // ── Live Convex data ────────────────────────────────────────────────────────
   const slotCountDocs = useQuery(api.showtimes.getAllSlotCounts);
+  const voterRecord = useQuery(api.voters.getMyVoterRecord);
   const isLoadingVotes = slotCountDocs === undefined;
+  const isLoadingVoter = voterRecord === undefined;
 
   const theaterById = Object.fromEntries(THEATERS.map((t) => [t.id, t.name]));
   const liveVotesMap: Record<string, number> = {};
 
   if (slotCountDocs) {
     for (const doc of slotCountDocs) {
-      const theaterName = theaterById[doc.theaterId] ?? doc.theaterId;
-      const displayKey = `${doc.date} | ${theaterName} | ${doc.time}`;
-      liveVotesMap[displayKey] = doc.voteCount;
+      liveVotesMap[doc.slotId] = doc.voteCount;
     }
   }
 
@@ -108,6 +117,40 @@ const VotingForm = () => {
 
   const castVoteMutation = useMutation(api.voters.castVote);
 
+  // 🟢 Automatically fire the mutation once Convex registers the new Better Auth session
+  useEffect(() => {
+    const executeVote = async () => {
+      if (isAuthenticated && pendingVote) {
+        try {
+          await castVoteMutation({
+            name: pendingVote.name,
+            phone: pendingVote.phone,
+            email: pendingVote.email,
+            selectedSlots: pendingVote.session,
+          });
+
+          toast.success("Vote submitted! Thank you for choosing PHM.");
+          localStorage.removeItem("phm-voting-form");
+          setHasVoted(true);
+
+          // Redirect to live results after a short delay to let the user see the success
+          setTimeout(() => {
+            router.push("/live-results");
+          }, 1500);
+        } catch (err: any) {
+          console.error(err);
+          toast.error(
+            err.message || "Failed to submit vote. Please try again.",
+          );
+          setPendingVote(null);
+          setIsSubmitting(false);
+        }
+      }
+    };
+
+    executeVote();
+  }, [isAuthenticated, pendingVote, castVoteMutation, router]);
+
   const handleSendCode = async () => {
     const email = getValues("email");
     const isValid = await trigger("email");
@@ -138,67 +181,179 @@ const VotingForm = () => {
 
   const onSubmit = async (data: FormValues) => {
     if (!isCodeSent) {
-      toast.error("Please send and enter the verification code first");
+      toast.error("Please request the verification code first.");
       return;
     }
 
     if (!enteredCode) {
-      toast.error("Please enter the verification code sent to your email");
+      toast.error("Please enter the verification code sent to your email.");
       return;
     }
 
     setIsSubmitting(true);
-    try {
-      // 1. Verify Verification OTP & Create Session
-      // FIXED: Swapped authClient.emailOtp.verifyVerificationOtp to authClient.signIn.emailOtp
-      const { data: verifyData, error: verifyError } =
-        await authClient.signIn.emailOtp({
-          email: data.email,
-          otp: enteredCode,
-        });
 
-      if (verifyError || !verifyData) {
+    try {
+      // 1. Verify the OTP and log the user in
+      const { data: verifyData, error } = await authClient.signIn.emailOtp({
+        email: data.email,
+        otp: enteredCode,
+      });
+
+      if (error) {
         toast.error(
-          verifyError?.message || "Invalid or expired verification code",
+          error.message || "Invalid verification code. Please try again.",
         );
         setIsSubmitting(false);
         return;
       }
 
-      // 2. Cast Vote in Convex
-      // Note: better-auth just set the session cookie above, so this mutation will have the user identity
-      await castVoteMutation({
-        name: data.name,
-        phone: data.phone,
-        email: data.email,
-        selectedSlots: data.session,
-      });
-
-      toast.success("Vote submitted successfully!");
-      setHasVoted(true);
-      localStorage.removeItem("phm-voting-form");
-
-      // Redirect to live results after a short delay
-      setTimeout(() => {
-        router.push("/live-results");
-      }, 1500);
+      // 2. Auth successful! Store data in pendingVote to trigger Convex submission
+      toast.success("Verified! Finalizing your vote...");
+      setPendingVote(data);
     } catch (err: any) {
       console.error(err);
-      toast.error(
-        err.message || "An error occurred during submission. Please try again.",
-      );
-    } finally {
+      toast.error(err.message || "An unexpected error occurred.");
       setIsSubmitting(false);
     }
   };
 
-  if (hasVoted) {
+  const isAlreadyVoted = voterRecord?.voted || hasVoted;
+
+  if (isAlreadyVoted) {
     return (
       <div
         id="voting-form"
-        className="px-6 py-12 flex flex-col items-center justify-center text-center space-y-4"
+        className="px-16 font-mona-sans bg-grid-dashed min-h-[50vh] flex items-center justify-center pt-40 pb-20"
       >
-        {/* TODO */}
+        <div className="max-w-4xl w-full">
+          <div className="bg-white border-2 border-black rounded-[32px] p-12 shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] flex flex-col gap-10">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-black">
+                  (You've already voted!{" "}
+                  <span className="-tracking-[6px]">----------</span>)
+                </h2>
+              </div>
+              <p className="text-xl text-zinc-500 font-medium max-w-2xl">
+                Thank you,{" "}
+                <span className="text-black font-bold">
+                  {voterRecord?.name || pendingVote?.name}
+                </span>
+                . Your preferences are with us.
+              </p>
+            </div>
+
+            <div className="border-y-2 border-zinc-100 py-10 flex flex-col gap-6">
+              <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest px-1">
+                Selected Showtime Choice(s)
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(voterRecord?.selectedSlots || pendingVote?.session || []).map(
+                  (slotId: string) => {
+                    // Try direct ID match first
+                    let slotInfo = ALL_SLOTS.find((s) => s.id === slotId);
+
+                    // Fallback: If match fails, try parsing old format "Day | Theater | Time"
+                    if (!slotInfo && slotId.includes("|")) {
+                      const parts = slotId.split("|").map((p) => p.trim());
+                      if (parts.length === 3) {
+                        const [day, theaterName, time] = parts;
+                        slotInfo = ALL_SLOTS.find(
+                          (s) =>
+                            s.day === day &&
+                            s.time === time &&
+                            (theaterName
+                              .toLowerCase()
+                              .includes(s.venueId.toLowerCase()) ||
+                              theaterById[s.venueId].toLowerCase() ===
+                                theaterName.toLowerCase()),
+                        );
+
+                        // If still null, create a synthetic slotInfo from the parts
+                        if (!slotInfo) {
+                          slotInfo = {
+                            id: slotId,
+                            day,
+                            time,
+                            venueId:
+                              theaterName.toLowerCase().includes("mall") ||
+                              theaterName.toLowerCase().includes("vr")
+                                ? "vr-mall"
+                                : "eternity",
+                          };
+                        }
+                      }
+                    }
+
+                    // If still null, just show a fallback card
+                    if (!slotInfo) {
+                      return (
+                        <div
+                          key={slotId}
+                          className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100 group transition-all duration-300"
+                        >
+                          <p className="text-black font-bold">{slotId}</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={slotId}
+                        className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100 flex flex-col gap-2 group hover:bg-black hover:border-black transition-all duration-300"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-lg font-bold text-black group-hover:text-white transition-colors">
+                            {slotInfo.time}, {slotInfo.day}
+                          </p>
+                          <div
+                            className={cn(
+                              "w-2 h-2 rounded-full",
+                              slotInfo.venueId === "vr-mall"
+                                ? "bg-green-500"
+                                : "bg-red-500",
+                            )}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <p className="text-sm font-bold text-zinc-400 group-hover:text-white/40 transition-colors">
+                            {theaterById[slotInfo.venueId] ||
+                              slotInfo.venueId ||
+                              "Global Screen"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="flex-1">
+                <p className="text-lg text-zinc-600 font-medium">
+                  Want to change your mind or update your details?
+                </p>
+              </div>
+              <Link href="/live-results">
+                <Button className="h-16 px-10 rounded-2xl bg-black text-white text-lg font-bold hover:bg-zinc-800 hover:scale-105 transition-all shadow-xl shadow-black/10">
+                  Live results page
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingVoter && isAuthenticated) {
+    return (
+      <div
+        id="voting-form"
+        className="px-16 font-mona-sans bg-grid-dashed min-h-[50vh] flex items-center justify-center"
+      >
+        <Loader2 className="w-12 h-12 animate-spin text-black" />
       </div>
     );
   }
@@ -207,7 +362,6 @@ const VotingForm = () => {
     <div id="voting-form" className="px-16 font-mona-sans bg-grid-dashed">
       <div className="grid grid-cols-1 lg:grid-cols-12 pt-40 gap-16 items-start">
         {/* Left Side: Form Content */}
-
         <div className="lg:col-span-8 flex flex-col gap-10">
           <div className="">
             <p className="text-black font-mona-sans text-[48px] md:text-[60px] leading-tight font-bold">
@@ -257,14 +411,6 @@ const VotingForm = () => {
                               className="space-y-4"
                             >
                               <div className="flex items-end gap-3">
-                                {/* <div
-                                  className={cn(
-                                    "rounded-full h-2 w-2 ml-5.5",
-                                    theater.name === "Cinepolis: VR Mall"
-                                      ? "bg-green-500"
-                                      : "bg-red-500",
-                                  )}
-                                /> */}
                                 <p className="font-bold text-lg text-zinc-800">
                                   {theater.name}
                                 </p>
@@ -284,7 +430,11 @@ const VotingForm = () => {
                                   SHOWTIMES_BY_THEATER[
                                     day as keyof typeof SHOWTIMES_BY_THEATER
                                   ][theater.id].map((time) => {
-                                    const value = `${day} | ${theater.name} | ${time}`;
+                                    const value = getSlotId(
+                                      theater.id,
+                                      time,
+                                      day,
+                                    );
                                     const isSelected =
                                       field.value?.includes(value);
 

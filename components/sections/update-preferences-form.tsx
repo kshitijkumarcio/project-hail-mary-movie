@@ -5,12 +5,14 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { DAYS, THEATERS, SHOWTIMES_BY_THEATER } from "@/constants";
+import { DAYS, THEATERS, SHOWTIMES_BY_THEATER, getSlotId } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import FlipTextButton from "../ui/flip-text-button";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 const formSchema = z.object({
   session: z
@@ -43,14 +45,20 @@ const UpdatePreferencesForm = ({
     defaultValues: initialData,
   });
 
+  const updateSelectedSlots = useMutation(api.voters.updateSelectedSlots);
+
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    console.log("Updated Preferences:", data);
-    setIsSubmitting(false);
-    setIsUpdated(true);
-    toast.success("Preferences updated successfully!");
+    try {
+      await updateSelectedSlots({ newSlots: data.session });
+      setIsSubmitting(false);
+      setIsUpdated(true);
+      toast.success("Preferences updated successfully!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to update preferences.");
+      setIsSubmitting(false);
+    }
   };
 
   if (isUpdated) {
@@ -150,7 +158,7 @@ const UpdatePreferencesForm = ({
                                   SHOWTIMES_BY_THEATER[
                                     day as keyof typeof SHOWTIMES_BY_THEATER
                                   ][theater.id].map((time) => {
-                                    const value = `${day} | ${theater.name} | ${time}`;
+                                    const value = getSlotId(theater.id, time, day);
                                     const isSelected =
                                       field.value?.includes(value);
 

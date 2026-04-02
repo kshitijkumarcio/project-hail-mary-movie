@@ -13,6 +13,9 @@ import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Mail, Phone, User, Loader2 } from "lucide-react";
 import FlipTextButton from "../ui/flip-text-button";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { authClient } from "@/lib/auth-client";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -61,6 +64,8 @@ const UpdateProfileForm = ({
     defaultValues: initialData,
   });
 
+  const updateProfile = useMutation(api.voters.updateProfile);
+
   const handleSendCode = async () => {
     const email = getValues("email");
     const isValid = await trigger("email");
@@ -68,23 +73,50 @@ const UpdateProfileForm = ({
     if (!isValid) return;
 
     setIsSendingCode(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSendingCode(false);
-    setIsCodeSent(true);
-    toast.success("Verification code sent to your email!");
+    try {
+      const { error } = await authClient.emailOtp.sendVerificationOtp({
+        email,
+        type: "sign-in",
+      });
+
+      if (error) {
+        toast.error(error.message || "Failed to send verification code");
+        return;
+      }
+
+      setIsCodeSent(true);
+      toast.success("Verification code sent to your email!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send code. Please try again.");
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
   const handleVerifyCode = async () => {
-    if (enteredCode.toLowerCase() !== "de408ddf") {
-      toast.error("Invalid verification code. Try 'de408ddf'");
-      return;
-    }
-
     setIsVerifyingCode(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsVerifyingCode(false);
-    setIsEmailVerified(true);
-    toast.success("Identity verified successfully!");
+    try {
+      const { data, error } = await authClient.signIn.emailOtp({
+        email: getValues("email"),
+        otp: enteredCode,
+      });
+
+      if (error) {
+        toast.error(
+          error.message || "Invalid verification code. Please try again.",
+        );
+        return;
+      }
+
+      setIsEmailVerified(true);
+      toast.success("Identity verified successfully!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Verification failed.");
+    } finally {
+      setIsVerifyingCode(false);
+    }
   };
 
   const onSubmit = async (data: FormValues) => {
@@ -94,12 +126,19 @@ const UpdateProfileForm = ({
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    console.log("Updated Profile:", data);
-    setIsSubmitting(false);
-    setIsUpdated(true);
-    toast.success("Profile updated successfully!");
+    try {
+      await updateProfile({
+        name: data.name,
+        phone: data.phone,
+      });
+      setIsUpdated(true);
+      toast.success("Profile updated successfully!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to update profile.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isUpdated) {

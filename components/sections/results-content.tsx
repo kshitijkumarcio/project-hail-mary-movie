@@ -11,7 +11,13 @@ import { api } from "@/convex/_generated/api";
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { DAYS, THEATERS, SHOWTIMES_BY_THEATER } from "@/constants";
+import {
+  DAYS,
+  THEATERS,
+  SHOWTIMES_BY_THEATER,
+  getSlotId,
+  ALL_SLOTS,
+} from "@/constants";
 import {
   CheckCircle2,
   TrendingUp,
@@ -29,18 +35,11 @@ import FlipTextButton from "../ui/flip-text-button";
 import UpdatePreferencesForm from "./update-preferences-form";
 import UpdateProfileForm from "./update-profile-form";
 
-/** All possible slots in display-key order (matches voters.selectedSlots format) */
-const ALL_SLOTS: string[] = DAYS.flatMap((day) =>
-  THEATERS.flatMap((theater) =>
-    (SHOWTIMES_BY_THEATER[day as keyof typeof SHOWTIMES_BY_THEATER]?.[theater.id] ?? []).map(
-      (time) => `${day} | ${theater.name} | ${time}`
-    )
-  )
-);
-
 const ResultsContent = () => {
   const formRef = useRef<HTMLDivElement>(null);
-  const [activeUpdateForm, setActiveUpdateForm] = useState<"preferences" | "profile" | null>(null);
+  const [activeUpdateForm, setActiveUpdateForm] = useState<
+    "preferences" | "profile" | null
+  >(null);
 
   const handleUpdateClick = (mode: "preferences" | "profile") => {
     setActiveUpdateForm(mode);
@@ -55,6 +54,8 @@ const ResultsContent = () => {
 
   const voterRecord = useQuery(api.voters.getMyVoterRecord);
   const isLoadingUser = voterRecord === undefined;
+
+  const totalVotesCasted = slotCountDocs?.reduce((acc, doc) => acc + (doc.voteCount || 0), 0) ?? 0;
 
   const userData = voterRecord || {
     name: isLoadingUser ? "Loading..." : "You haven't voted yet 👋",
@@ -75,30 +76,56 @@ const ResultsContent = () => {
   const liveVotes: Record<string, number> = {};
   if (slotCountDocs) {
     for (const doc of slotCountDocs) {
-      const theaterName = theaterById[doc.theaterId] ?? doc.theaterId;
-      const displayKey = `${doc.date} | ${theaterName} | ${doc.time}`;
-      liveVotes[displayKey] = doc.voteCount;
+      liveVotes[doc.slotId] = doc.voteCount;
     }
   }
 
   // Merge with all slots so every slot always has a count (even if 0)
+  // Map keyed by slot ID
   const votesMap: Record<string, number> = Object.fromEntries(
-    ALL_SLOTS.map((slot) => [slot, liveVotes[slot] ?? 0])
+    ALL_SLOTS.map((slot) => [slot.id, liveVotes[slot.id] ?? 0]),
   );
+
+  // Normalization for legacy data
+  const normalizedSelectedSlots = userData.selectedSlots.map((slotId) => {
+    if (slotId.includes("|")) {
+      const parts = slotId.split("|").map((p) => p.trim());
+      if (parts.length === 3) {
+        const [day, theaterName, time] = parts;
+        // Search for matching clinic in THEATERS to get ID
+        const theaterId = THEATERS.find(
+          (t) =>
+            theaterName.toLowerCase().includes(t.id.toLowerCase()) ||
+            t.name.toLowerCase() === theaterName.toLowerCase(),
+        )?.id;
+        if (theaterId) {
+          return getSlotId(theaterId, time, day);
+        }
+      }
+    }
+    return slotId;
+  });
 
   const allZero = Object.values(votesMap).every((v) => v === 0);
 
-  // Sort by vote count descending; if all zero, preserve constants order
-  const sortedSessions: [string, number][] = allZero
-    ? ALL_SLOTS.slice(0, 3).map((slot) => [slot, 0])
-    : Object.entries(votesMap).sort((a, b) => b[1] - a[1]);
+  // Sort by vote count descending
+  const sortedSlots = [...ALL_SLOTS].sort((a, b) => {
+    const votesA = votesMap[a.id] ?? 0;
+    const votesB = votesMap[b.id] ?? 0;
+    if (allZero) return 0; // maintain original order if no votes
+    return votesB - votesA;
+  });
 
-  const topThree = allZero
-    ? sortedSessions  // already exactly 3
-    : sortedSessions.slice(0, 3);
+  const slotIdToName: Record<string, string> = Object.fromEntries(
+    ALL_SLOTS.map((slot) => [
+      slot.id,
+      `${slot.day} | ${theaterById[slot.venueId] || slot.venueId} | ${slot.time}`,
+    ]),
+  );
 
-  const topSessions = topThree.map((s) => s[0]);
-  const maxVotes = topThree[0]?.[1] || 0;
+  const topThree = sortedSlots.slice(0, 3);
+  const topSessionIds = topThree.map((s) => s.id);
+  const maxVotes = votesMap[topThree[0]?.id] || 0;
 
   const [isHovered, setIsHovered] = useState(false);
   const ticketDivRef = useRef<HTMLDivElement>(null);
@@ -178,7 +205,7 @@ const ResultsContent = () => {
             )
           </p>
           <p className="text-zinc-600 text-lg max-w-xl">
-            Here's how the community is voting for the screening.
+            Here's how the community is voting for the movie screening.
           </p>
         </div>
 
@@ -324,6 +351,14 @@ const ResultsContent = () => {
                 Most Voted Screens
               </h2>
             </div>
+            <div className="flex items-center gap-4">
+              {!isLoading && (
+                <div className="px-4 py-1.5 bg-zinc-300/50 text-black text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-2">
+                  <span className="opacity-80">Total Votes:</span>
+                  <span className="text-xs">{totalVotesCasted}</span>
+                </div>
+              )}
+            </div>
             {isLoading && (
               <div className="flex items-center gap-2 text-zinc-400 text-sm font-medium">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -339,7 +374,7 @@ const ResultsContent = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end max-w-5xl mx-auto pt-10">
             {/* 2nd Place */}
-            {topThree[1] && (
+            {topThree[1] && votesMap[topThree[1].id] !== undefined && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -356,18 +391,18 @@ const ResultsContent = () => {
                 <div className="w-full bg-zinc-100 rounded-t-[32px] p-8 border-x border-t border-zinc-200 text-center min-h-[220px] flex flex-col justify-between shadow-sm">
                   <div className="space-y-2">
                     <p className="font-bold text-black leading-snug">
-                      {topThree[1][0].split(" | ")[2]}
+                      {topThree[1].time}
                     </p>
                     <p className="text-[11px] font-bold text-black/50 uppercase tracking-widest">
-                      {topThree[1][0].split(" | ")[0]}
+                      {topThree[1].day}
                     </p>
                     <p className="text-xs font-bold text-zinc-500 uppercase">
-                      {topThree[1][0].split(" | ")[1]}
+                      {theaterById[topThree[1].venueId]}
                     </p>
                   </div>
                   <div className="pt-4">
                     <span className="text-4xl font-bold text-black">
-                      {topThree[1][1]}
+                      {votesMap[topThree[1].id]}
                     </span>
                     <span className="text-zinc-400 font-bold ml-2">votes</span>
                   </div>
@@ -376,7 +411,7 @@ const ResultsContent = () => {
             )}
 
             {/* 1st Place */}
-            {topThree[0] && (
+            {topThree[0] && votesMap[topThree[0].id] !== undefined && (
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -394,21 +429,21 @@ const ResultsContent = () => {
                   <div className="absolute inset-0 bg-linear-to-t from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="space-y-2 relative z-10">
                     <p className="text-xl font-bold text-white leading-tight">
-                      {topThree[0][0].split(" | ")[2]}
+                      {topThree[0].time}
                     </p>
                     <p className="text-xs font-bold text-white/50 uppercase tracking-widest">
-                      {topThree[0][0].split(" | ")[0]}
+                      {topThree[0].day}
                     </p>
                     <p className="text-xs font-bold text-white/80 uppercase tracking-widest">
-                      {topThree[0][0].split(" | ")[1]}
+                      {theaterById[topThree[0].venueId]}
                     </p>
                   </div>
                   <div className="pt-6 relative z-10">
                     <div className="text-white/40 text-[10px] uppercase font-bold tracking-[4px] mb-2">
-                       Total Power
+                      Total Power
                     </div>
                     <span className="text-6xl font-black text-white italic">
-                      {topThree[0][1]}
+                      {votesMap[topThree[0].id]}
                     </span>
                     <span className="text-white/60 font-bold ml-3 text-lg uppercase">
                       Votes
@@ -419,7 +454,7 @@ const ResultsContent = () => {
             )}
 
             {/* 3rd Place */}
-            {topThree[2] && (
+            {topThree[2] && votesMap[topThree[2].id] !== undefined && (
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -436,18 +471,18 @@ const ResultsContent = () => {
                 <div className="w-full bg-zinc-50 rounded-t-[24px] p-6 border-x border-t border-zinc-100 text-center min-h-[180px] flex flex-col justify-between">
                   <div className="space-y-2">
                     <p className="font-bold text-zinc-800 leading-snug">
-                      {topThree[2][0].split(" | ")[2]}
+                      {topThree[2].time}
                     </p>
                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                      {topThree[2][0].split(" | ")[0]}
+                      {topThree[2].day}
                     </p>
                     <p className="text-[10px] font-bold text-zinc-400 uppercase">
-                      {topThree[2][0].split(" | ")[1]}
+                      {theaterById[topThree[2].venueId]}
                     </p>
                   </div>
                   <div className="pt-4">
                     <span className="text-3xl font-bold text-zinc-700">
-                      {topThree[2][1]}
+                      {votesMap[topThree[2].id]}
                     </span>
                     <span className="text-zinc-400 font-bold ml-2 text-sm">
                       votes
@@ -476,7 +511,9 @@ const ResultsContent = () => {
 
                   <div className="grid pt-6 grid-cols-1 gap-4 space-y-10">
                     {THEATERS.map((theater) => {
-                      const times = SHOWTIMES_BY_THEATER[day][theater.id];
+                      const times = ALL_SLOTS.filter(
+                        (s) => s.day === day && s.venueId === theater.id,
+                      ).map((s) => s.time);
 
                       return (
                         <div key={`${day}-${theater.id}`} className="space-y-4">
@@ -486,15 +523,21 @@ const ResultsContent = () => {
                           {times.length === 0 ? (
                             <div className="p-5 rounded-2xl border-2 border-dashed border-zinc-100 bg-zinc-50/50 flex items-center justify-center">
                               <p className="text-zinc-400 text-sm font-medium italic">
-                                No slots available in VR Mall on this day
+                                No slots available in {theater.name} on this day
                               </p>
                             </div>
                           ) : (
                             <div className="grid grid-cols-1 gap-3">
                               {times.map((time) => {
-                                const sessionKey = `${day} | ${theater.name} | ${time}`;
+                                const sessionKey = getSlotId(
+                                  theater.id,
+                                  time,
+                                  day,
+                                );
                                 const votes = votesMap[sessionKey] ?? 0;
-                                const isTop = !allZero && topSessions.includes(sessionKey);
+                                const isTop =
+                                  !allZero &&
+                                  topSessionIds.includes(sessionKey);
 
                                 return (
                                   <div
@@ -628,19 +671,84 @@ const ResultsContent = () => {
                   Your Choices
                 </p>
               </div>
-              <div className="space-y-2">
-                {userData.selectedSlots.length > 0 ? (
-                  userData.selectedSlots.map((session) => (
-                    <div
-                      key={session}
-                      className="p-4 bg-white border border-zinc-200 rounded-xl flex items-center gap-3"
-                    >
-                      <CheckCircle2 size={16} className="text-green-500" />
-                      <span className="text-sm font-semibold text-zinc-700">
-                        {session}
-                      </span>
-                    </div>
-                  ))
+              <div className="grid grid-cols-1 gap-4">
+                {normalizedSelectedSlots.length > 0 ? (
+                  normalizedSelectedSlots.map((slotId: string) => {
+                    // Try direct ID match first
+                    let slotInfo = ALL_SLOTS.find((s) => s.id === slotId);
+
+                    // Fallback: If match fails, try parsing old format "Day | Theater | Time"
+                    if (!slotInfo && slotId.includes("|")) {
+                      const parts = slotId.split("|").map((p) => p.trim());
+                      if (parts.length === 3) {
+                        const [day, theaterName, time] = parts;
+                        slotInfo = ALL_SLOTS.find(
+                          (s) =>
+                            s.day === day &&
+                            s.time === time &&
+                            (theaterName
+                              .toLowerCase()
+                              .includes(s.venueId.toLowerCase()) ||
+                              theaterById[s.venueId].toLowerCase() ===
+                                theaterName.toLowerCase()),
+                        );
+
+                        // If still null, create a synthetic slotInfo from the parts
+                        if (!slotInfo) {
+                          slotInfo = {
+                            id: slotId,
+                            day,
+                            time,
+                            venueId:
+                              theaterName.toLowerCase().includes("mall") ||
+                              theaterName.toLowerCase().includes("vr")
+                                ? "vr-mall"
+                                : "eternity",
+                          };
+                        }
+                      }
+                    }
+
+                    // If still null, just show a fallback card
+                    if (!slotInfo) {
+                      return (
+                        <div
+                          key={slotId}
+                          className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100 group transition-all duration-300"
+                        >
+                          <p className="text-black font-bold">{slotId}</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={slotId}
+                        className="p-6 bg-white rounded-2xl border border-zinc-100 flex flex-col gap-2 group hover:bg-black hover:border-black transition-all duration-300"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-lg font-bold text-black group-hover:text-white transition-colors">
+                            {slotInfo.time}, {slotInfo.day}
+                          </p>
+                          <div
+                            className={cn(
+                              "w-2 h-2 rounded-full",
+                              slotInfo.venueId === "vr-mall"
+                                ? "bg-green-500"
+                                : "bg-red-500",
+                            )}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <p className="text-sm font-bold text-zinc-400 group-hover:text-white/40 transition-colors">
+                            {theaterById[slotInfo.venueId] ||
+                              slotInfo.venueId ||
+                              "Global Screen"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
                 ) : (
                   <div className="p-4 bg-white border border-zinc-200 rounded-xl flex items-center justify-center gap-3 text-zinc-500 text-sm">
                     No slots selected yet.
@@ -696,9 +804,7 @@ const ResultsContent = () => {
             <p className="text-zinc-500 font-medium">
               Want to invite a friend?
             </p>
-            <p className="text-sm text-zinc-400">
-              Share this page with them! 
-            </p>
+            <p className="text-sm text-zinc-400">Share this page with them!</p>
           </div>
         </div>
       </div>
@@ -707,9 +813,17 @@ const ResultsContent = () => {
       {activeUpdateForm && (
         <div ref={formRef} className="pt-24 border-t border-zinc-200">
           {activeUpdateForm === "preferences" ? (
-            <UpdatePreferencesForm initialData={{ session: userData.selectedSlots }} />
+            <UpdatePreferencesForm
+              initialData={{ session: normalizedSelectedSlots }}
+            />
           ) : (
-            <UpdateProfileForm initialData={{ name: userData.name, phone: userData.phone, email: userData.email }} />
+            <UpdateProfileForm
+              initialData={{
+                name: userData.name,
+                phone: userData.phone,
+                email: userData.email,
+              }}
+            />
           )}
         </div>
       )}
