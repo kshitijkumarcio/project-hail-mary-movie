@@ -21,7 +21,7 @@ const Instructions = () => {
           </span>
           )
         </p>
-        <p className="text-zinc-600 text-lg max-w-xl">
+        <p className="text-zinc-600 xl:text-lg text-md max-w-xl">
           Let me just explain how this is gonna work, put on your game face.
         </p>
       </div>
@@ -31,7 +31,7 @@ const Instructions = () => {
           <p className="text-2xl font-bold text-black opacity-100">
             [01] &nbsp; Choosing the movie slot(s)
           </p>
-          <p className="text-zinc-600 text-lg mt-2 max-w-xl">
+          <p className="text-zinc-600 xl:text-lg text-md mt-2 xl:max-w-xl max-w-[400px]">
             Choose the movie slot that works best for you. You can select
             multiple, which would mean, any of the slots you have selected,
             would work for you.
@@ -42,7 +42,7 @@ const Instructions = () => {
           <p className="text-2xl font-bold text-black opacity-100">
             [02] &nbsp; Knowing your data privacy
           </p>
-          <p className="text-zinc-600 text-lg mt-2 max-w-xl">
+          <p className="text-zinc-600 xl:text-lg text-md mt-2 xl:max-w-xl max-w-[400px]">
             Only Kshitij can see the name & phone that you provide here. To the
             rest, everyone appears as an anonymous voter, with no way of knowing
             anyone's name or phone number. No whatsapp group shenanigans.
@@ -55,7 +55,7 @@ const Instructions = () => {
           <p className="text-2xl font-bold text-black opacity-100">
             [03] &nbsp; You can invite anyone
           </p>
-          <p className="text-zinc-600 text-lg mt-2 max-w-xl">
+          <p className="text-zinc-600 xl:text-lg text-md mt-2 xl:max-w-xl max-w-[400px]">
             This is not limited to just Swapbook members, you can invite anyone
             you want to, regardless of if they are part of the bookclub or not. Just
             share this page with them.
@@ -66,7 +66,7 @@ const Instructions = () => {
           <p className="text-2xl font-bold text-black opacity-100">
             [04] &nbsp; Finalising the slot
           </p>
-          <p className="text-zinc-600 text-lg mt-2 max-w-xl">
+          <p className="text-zinc-600 xl:text-lg text-md mt-2 xl:max-w-xl max-w-[400px]">
             The slot having the maximum votes by the end of Friday will be
             finalised. People who did not choose the slot that has maximum
             votes, can either adjust, or, ask me to help them out with the same.
@@ -80,7 +80,7 @@ const Instructions = () => {
           <p className="text-2xl font-bold text-black opacity-100">
             [05] &nbsp; Booking & payments
           </p>
-          <p className="text-zinc-600 text-lg mt-2 max-w-xl">
+          <p className="text-zinc-600 xl:text-lg text-md mt-2 xl:max-w-xl max-w-[400px]">
             You can select and book your seat on your own, OR, you can ask me to
             take care of that too. Whatever is easier for you. (Just ask me for
             my UPI Id if you choose the later)
@@ -92,7 +92,7 @@ const Instructions = () => {
             [06] &nbsp; Anything else?
           </p>
           <div>
-            <p className="text-zinc-600 inline text-lg mt-2 max-w-xl">
+            <p className="text-zinc-600 inline text-lg mt-2 xl:max-w-xl max-w-[400px]">
               Here's my{" "}
             </p>
             <Link

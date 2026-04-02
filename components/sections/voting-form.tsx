@@ -367,7 +367,7 @@ const VotingForm = () => {
     <div id="voting-form" className="px-16 font-mona-sans bg-grid-dashed">
       <div className="grid grid-cols-1 lg:grid-cols-12 pt-40 gap-16 items-start">
         {/* Left Side: Form Content */}
-        <div className="lg:col-span-8 flex flex-col gap-10">
+        <div className="xl:col-span-8 col-span-12 flex flex-col gap-10">
           <div className="">
             <p className="text-black font-mona-sans text-[48px] md:text-[60px] leading-tight font-bold">
               (Okay then{" "}
@@ -724,7 +724,7 @@ const VotingForm = () => {
         </div>
 
         {/* Right Side: Mascot Visual */}
-        <div className="lg:col-span-4 flex flex-col h-full">
+        <div className="hidden xl:flex xl:col-span-4 flex-col h-full">
           <div className="flex flex-col items-center gap-10 h-[90%] justify-between">
             {/*  */}
             <div className="relative w-[240px] h-[240px] transition-transform duration-700 ease-out hover:scale-110 hover:-rotate-3">
