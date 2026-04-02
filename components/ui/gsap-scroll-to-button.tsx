@@ -25,7 +25,7 @@ const GsapScrollToButton = ({ targetId, children, onClick, ...props }: ScrollToB
   };
 
   return (
-    <button onClick={handleClick} {...props}>
+    <button onClick={handleClick} className="cursor-pointer" {...props}>
       {children}
     </button>
   );

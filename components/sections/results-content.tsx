@@ -762,7 +762,7 @@ const ResultsContent = () => {
                   <button
                     onClick={() => handleUpdateClick("preferences")}
                     className={cn(
-                      "w-full h-14 rounded-2xl font-bold uppercase text-sm tracking-wider transition-all flex items-center justify-center group overflow-hidden",
+                      "w-full h-14 rounded-2xl font-bold uppercase text-sm tracking-wider transition-all flex items-center justify-center group overflow-hidden cursor-pointer",
                       activeUpdateForm === "preferences"
                         ? "bg-zinc-200 text-zinc-600"
                         : "bg-black text-white hover:bg-zinc-800",
@@ -775,7 +775,7 @@ const ResultsContent = () => {
                   <button
                     onClick={() => handleUpdateClick("profile")}
                     className={cn(
-                      "w-full h-14 rounded-2xl font-bold uppercase text-sm tracking-wider transition-all flex items-center justify-center group overflow-hidden",
+                      "w-full h-14 rounded-2xl font-bold uppercase text-sm tracking-wider transition-all flex items-center justify-center group overflow-hidden cursor-pointer",
                       activeUpdateForm === "profile"
                         ? "bg-zinc-200 text-zinc-600"
                         : "bg-black text-white hover:bg-zinc-800",

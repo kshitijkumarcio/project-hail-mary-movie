@@ -73,7 +73,7 @@ const Modal = ({ children, className }: ModalProps) => {
         >
           <button
             onClick={onDismiss}
-            className="absolute right-6 top-6 p-2 rounded-full hover:bg-zinc-100 transition-colors z-10"
+            className="absolute right-6 top-6 p-2 rounded-full hover:bg-zinc-100 transition-colors z-10 cursor-pointer"
           >
             <X size={20} className="text-zinc-500" />
           </button>
