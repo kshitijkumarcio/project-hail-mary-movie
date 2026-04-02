@@ -1,37 +1,39 @@
-import { NextResponse, userAgent } from 'next/server';
+import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
-  // Extract device information from the incoming request
-  const { device } = userAgent(request);
+// List of mobile device identifiers
+const mobilePatterns = [
+    /Android/i, /webOS/i, /iPhone/i, /iPod/i, /BlackBerry/i,
+    /Windows Phone/i, /Mobile/i, /Opera Mini/i, /IEMobile/i
+];
 
-  // Check if the device is identified as mobile or tablet
-  if (device.type === 'mobile' || device.type === 'tablet') {
-    
-    // Check if they are already on the blocked page to prevent infinite loops
+export function proxy(request: NextRequest) {
+  // Access the headers using the Next.js Web API format
+  const userAgent = request.headers.get('user-agent') || '';
+  
+  // Check if the User-Agent matches any mobile pattern
+  const isMobile = mobilePatterns.some(pattern => pattern.test(userAgent));
+  
+  if (isMobile) {
+    // Prevent infinite loops if they are already on the blocked page
     if (request.nextUrl.pathname === '/device-blocked') {
       return NextResponse.next();
     }
-
-    // Rewrite the request to show the blocked page without changing the URL
+    
+    // Option 1: Redirect to a "Not Allowed" page
+    // This physically moves them away from /home to /device-blocked
     const url = request.nextUrl.clone();
     url.pathname = '/device-blocked';
-    return NextResponse.rewrite(url);
+    return NextResponse.redirect(url);
   }
-
+  
+  // Allow the request to proceed for desktop/laptop
   return NextResponse.next();
 }
 
-// Configure the middleware to ignore static files, APIs, and images
+// Configure the middleware to run on the correct paths
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, file.svg, globe.svg, etc. (static public files)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.svg|.*\\.jpg).*)',
   ],
 };
