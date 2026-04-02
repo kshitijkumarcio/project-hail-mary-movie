@@ -12,12 +12,20 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Mail, Phone, User, Loader2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Mail,
+  Phone,
+  User,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import FlipTextButton from "../ui/flip-text-button";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 // Types and Schema
 const formSchema = z.object({
@@ -36,18 +44,13 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-
-
 const VotingForm = () => {
-  
-
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isCodeSent, setIsCodeSent] = useState(false);
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [enteredCode, setEnteredCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
+  const router = useRouter();
 
   // ── Live Convex data ────────────────────────────────────────────────────────
   const slotCountDocs = useQuery(api.showtimes.getAllSlotCounts);
@@ -55,7 +58,7 @@ const VotingForm = () => {
 
   const theaterById = Object.fromEntries(THEATERS.map((t) => [t.id, t.name]));
   const liveVotesMap: Record<string, number> = {};
-  
+
   if (slotCountDocs) {
     for (const doc of slotCountDocs) {
       const theaterName = theaterById[doc.theaterId] ?? doc.theaterId;
@@ -112,88 +115,78 @@ const VotingForm = () => {
     if (!isValid) return;
 
     setIsSendingCode(true);
-
-    const promise = new Promise(async (resolve, reject) => {
+    try {
       const { error } = await authClient.emailOtp.sendVerificationOtp({
         email,
         type: "sign-in",
       });
-      if (error) reject(error);
-      else resolve(true);
-    });
 
-    toast.promise(promise, {
-      loading: "Sending verification code...",
-      success: "Verification code sent to your email!",
-      error: (err: any) => err.message || "Failed to send code.",
-    });
+      if (error) {
+        toast.error(error.message || "Failed to send verification code");
+        return;
+      }
 
-    try {
-      await promise;
       setIsCodeSent(true);
-    } catch {
-      // Error handled by toast.promise
+      toast.success("Verification code sent to your email!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send code. Please try again.");
     } finally {
       setIsSendingCode(false);
     }
   };
 
-  const handleVerifyCode = async () => {
-    setIsVerifyingCode(true);
-    const email = getValues("email");
-    
-    const promise = new Promise(async (resolve, reject) => {
-      const { error } = await authClient.signIn.emailOtp({
-        email,
-        otp: enteredCode,
-      });
-      if (error) reject(error);
-      else resolve(true);
-    });
-
-    toast.promise(promise, {
-      loading: "Verifying code...",
-      success: "Email verified successfully!",
-      error: (err: any) => err.message || "Invalid verification code.",
-    });
-
-    try {
-      await promise;
-      setIsEmailVerified(true);
-    } catch {
-      // Error handled by toast.promise
-    } finally {
-      setIsVerifyingCode(false);
-    }
-  };
-
   const onSubmit = async (data: FormValues) => {
-    if (!isEmailVerified) {
-      toast.error("Please verify your email first.");
+    if (!isCodeSent) {
+      toast.error("Please send and enter the verification code first");
+      return;
+    }
+
+    if (!enteredCode) {
+      toast.error("Please enter the verification code sent to your email");
       return;
     }
 
     setIsSubmitting(true);
-    
-    const promise = castVoteMutation({
-      name: data.name,
-      phone: data.phone,
-      email: data.email,
-      selectedSlots: data.session,
-    });
-
-    toast.promise(promise, {
-      loading: "Submitting your voting preferences...",
-      success: "Vote submitted! Thank you for choosing PHM.",
-      error: (err: any) => err.message || "An error occurred while casting your vote.",
-    });
-
     try {
-      await promise;
-      localStorage.removeItem("phm-voting-form");
+      // 1. Verify Verification OTP & Create Session
+      // FIXED: Swapped authClient.emailOtp.verifyVerificationOtp to authClient.signIn.emailOtp
+      const { data: verifyData, error: verifyError } =
+        await authClient.signIn.emailOtp({
+          email: data.email,
+          otp: enteredCode,
+        });
+
+      if (verifyError || !verifyData) {
+        toast.error(
+          verifyError?.message || "Invalid or expired verification code",
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. Cast Vote in Convex
+      // Note: better-auth just set the session cookie above, so this mutation will have the user identity
+      await castVoteMutation({
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        selectedSlots: data.session,
+      });
+
+      toast.success("Vote submitted successfully!");
       setHasVoted(true);
-    } catch {
-      // Error handled by toast.promise
+      localStorage.removeItem("phm-voting-form");
+
+      // Redirect to live results after a short delay
+      setTimeout(() => {
+        router.push("/live-results");
+      }, 1500);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(
+        err.message || "An error occurred during submission. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -205,16 +198,7 @@ const VotingForm = () => {
         id="voting-form"
         className="px-6 py-12 flex flex-col items-center justify-center text-center space-y-4"
       >
-        <div className="relative w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle2 className="w-12 h-12 text-green-500 animate-in zoom-in duration-500" />
-        </div>
-        <h2 className="text-3xl font-bold tracking-tight">
-          Thanks for voting!
-        </h2>
-        <p className="text-zinc-500 text-lg">
-          We&apos;ve recorded your choice. See you at the screening! (Alright
-          ------)
-        </p>
+        {/* TODO */}
       </div>
     );
   }
@@ -261,7 +245,9 @@ const VotingForm = () => {
                         className="bg-zinc-100/50 rounded-[12px] px-8 py-8 flex flex-col gap-8"
                       >
                         <div className="flex  items-center gap-4">
-                          <p className="text-xl border-l-4 pl-4 font-bold text-black">{day}</p>
+                          <p className="text-xl border-l-4 pl-4 font-bold text-black">
+                            {day}
+                          </p>
                         </div>
 
                         <div className="grid  mt-3 grid-cols-1 md:grid-cols-2 gap-12">
@@ -334,12 +320,17 @@ const VotingForm = () => {
                                             {time}
                                           </p>
                                         </div>
-                                          <p className={cn(
+                                        <p
+                                          className={cn(
                                             "font-normal text-sm transition-colors",
-                                            isSelected ? "text-white/60" : "text-zinc-500"
-                                          )}>
-                                            {liveVotesMap[value] || 0} voted for this
-                                          </p>
+                                            isSelected
+                                              ? "text-white/60"
+                                              : "text-zinc-500",
+                                          )}
+                                        >
+                                          {liveVotesMap[value] || 0} voted for
+                                          this
+                                        </p>
                                         <div
                                           className={cn(
                                             "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300",
@@ -357,7 +348,8 @@ const VotingForm = () => {
                                   })
                                 ) : (
                                   <p className="text-zinc-800 text-sm py-2 max-w-[350px] font-mona-sans tracking-wide font-semibold">
-                                    Unfortunately, no showtimes are listed for {day} at {theater.name}
+                                    Unfortunately, no showtimes are listed for{" "}
+                                    {day} at {theater.name}
                                     &nbsp;on BookMyShow.
                                   </p>
                                 )}
@@ -498,12 +490,12 @@ const VotingForm = () => {
                           className="pl-12 h-14 rounded-2xl border-zinc-200 bg-white focus-visible:bg-white font-mona-sans font-semibold transition-all text-base disabled:bg-zinc-100 disabled:opacity-100"
                           type="email"
                           placeholder="rylandgrace@gmail.com"
-                          disabled={isEmailVerified || isCodeSent}
+                          disabled={isCodeSent}
                         />
                       )}
                     />
                   </div>
-                  {!isCodeSent && !isEmailVerified && (
+                  {!isCodeSent && (
                     <Button
                       type="button"
                       className={cn(
@@ -521,23 +513,9 @@ const VotingForm = () => {
                       </FlipTextButton>
                     </Button>
                   )}
-
-                  {isEmailVerified && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-14 rounded-2xl px-8 min-w-[140px] font-bold text-sm uppercase tracking-wider bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                      disabled
-                    >
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5" />
-                        Verified
-                      </div>
-                    </Button>
-                  )}
                 </div>
 
-                {isCodeSent && !isEmailVerified && (
+                {isCodeSent && (
                   <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="relative flex-1 group">
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center h-full text-zinc-400 font-bold text-xs uppercase tracking-tighter">
@@ -545,29 +523,14 @@ const VotingForm = () => {
                       </div>
                       <Input
                         value={enteredCode}
-                        onChange={(e) => setEnteredCode(e.target.value)}
+                        onChange={(e) =>
+                          setEnteredCode(e.target.value.toUpperCase())
+                        }
                         className="pl-16 h-14 rounded-2xl border-zinc-200 bg-white focus-visible:bg-white transition-all text-base font-mono uppercase tracking-widest"
                         placeholder="••••••••"
                         autoFocus
                       />
                     </div>
-                    <Button
-                      type="button"
-                      className="h-14 rounded-2xl px-8 min-w-[140px] font-bold text-sm uppercase tracking-wider transition-all cursor-pointer bg-black text-white hover:bg-zinc-800"
-                      onClick={handleVerifyCode}
-                      disabled={isVerifyingCode || !enteredCode}
-                    >
-                      <FlipTextButton maxHeight="max-h-14">
-                        {isVerifyingCode ? (
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Verifying...
-                          </div>
-                        ) : (
-                          "Verify Code"
-                        )}
-                      </FlipTextButton>
-                    </Button>
                   </div>
                 )}
               </div>
@@ -582,18 +545,20 @@ const VotingForm = () => {
               size="lg"
               className={cn(
                 "w-full h-16 text-xl font-bold rounded-2xl transition-all shadow-xl shadow-black/5 disabled:opacity-100 disabled:cursor-not-allowed disabled:pointer-events-auto",
-                !isEmailVerified || isSubmitting
+                !isCodeSent || isSubmitting
                   ? "bg-zinc-200 text-zinc-500"
                   : "bg-black text-white hover:bg-zinc-800 hover:scale-[1.01] active:scale-[0.99]",
               )}
-              disabled={!isEmailVerified || isSubmitting}
+              disabled={!isCodeSent || isSubmitting}
             >
               <FlipTextButton maxHeight="max-h-16">
                 {isSubmitting ? (
                   <div className="flex items-center gap-3">
                     <Loader2 className="w-6 h-6 animate-spin" />
-                    Submitting the form...
+                    Submitting...
                   </div>
+                ) : isCodeSent ? (
+                  "Verify & Submit My Vote"
                 ) : (
                   "Done, I wanna submit!"
                 )}

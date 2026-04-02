@@ -21,13 +21,26 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       convex({ authConfig }),
       emailOTP({
         async sendVerificationOTP({ email, otp, type }) {
-          const resend = new Resend(process.env.RESEND_API_KEY!);
-          await resend.emails.send({
-            from: "Project Hail Mary Movie Night <onboarding@resend.dev>",
-            to: email,
-            subject: "Your Vote Verification Code",
-            text: `Your Project Hail Mary Movie Night vote verification code is: ${otp}`,
-          });
+          console.log(`[Better Auth] Sending OTP to ${email}: ${otp}`);
+          try {
+            const resend = new Resend(process.env.RESEND_API_KEY!);
+            console.log("[Better Auth] Resend API Key available:", !!process.env.RESEND_API_KEY);
+            const { data, error } = await resend.emails.send({
+              // ⚠️ IMPORTANT: Replace 'your-domain.com' with the exact domain you just verified on Resend!
+              from: "Project Hail Mary Movie Night <namaste@mortalandhaven.com>",
+              to: email,
+              subject: "Your Vote Verification Code",
+              text: `Your Project Hail Mary Movie Night vote verification code is: ${otp}`,
+            });
+            
+            if (error) {
+              console.error("[Better Auth] Resend sending failed:", error);
+            } else {
+              console.log("[Better Auth] Resend sending success:", data);
+            }
+          } catch (error) {
+            console.error("[Better Auth] Error in Resend call:", error);
+          }
         },
       }),
     ],
