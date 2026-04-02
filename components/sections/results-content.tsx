@@ -342,7 +342,7 @@ const ResultsContent = () => {
 
       <div className="relative mt-60 grid grid-cols-12 gap-16 items-start">
         {/* Left side: Podium Section */}
-        <div className="lg:col-span-7 space-y-12 bg-zinc-100/50 rounded-[32px] p-8 border border-zinc-200/50">
+        <div className="xl:col-span-7 col-span-12 space-y-12 bg-zinc-100/50 rounded-[32px] p-8 border border-zinc-200/50">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Trophy className="w-6 h-6 text-black" />
@@ -601,7 +601,7 @@ const ResultsContent = () => {
         </div>
 
         {/* Right Side: Personal Data Portal */}
-        <div className="lg:col-span-5 lg:sticky lg:top-32 space-y-8">
+        <div className="xl:col-span-5 col-span-12 xl:sticky xl:top-32 space-y-8">
           <div className="bg-zinc-100/50 rounded-[32px] p-8 border border-zinc-200/50 space-y-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
