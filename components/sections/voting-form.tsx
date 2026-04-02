@@ -132,16 +132,21 @@ const VotingForm = () => {
           toast.success("Vote submitted! Thank you for choosing PHM.");
           localStorage.removeItem("phm-voting-form");
           setHasVoted(true);
-
-          // Redirect to live results after a short delay to let the user see the success
-          setTimeout(() => {
-            router.push("/live-results");
-          }, 1500);
         } catch (err: any) {
           console.error(err);
-          toast.error(
-            err.message || "Failed to submit vote. Please try again.",
-          );
+
+          // 🛑 Catch the specific "already voted" error from Convex
+          if (err.message && err.message.includes("User has already voted")) {
+            toast.success("Welcome back! We already have your vote on record.");
+            localStorage.removeItem("phm-voting-form");
+            setHasVoted(true); // Still show them the success screen!
+          } else {
+            // For any other genuine errors, show the red toast
+            toast.error(
+              err.message || "Failed to submit vote. Please try again.",
+            );
+          }
+        } finally {
           setPendingVote(null);
           setIsSubmitting(false);
         }
@@ -149,7 +154,7 @@ const VotingForm = () => {
     };
 
     executeVote();
-  }, [isAuthenticated, pendingVote, castVoteMutation, router]);
+  }, [isAuthenticated, pendingVote, castVoteMutation]);
 
   const handleSendCode = async () => {
     const email = getValues("email");

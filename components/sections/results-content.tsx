@@ -5,9 +5,8 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useRef, useState } from "react";
 import GsapScrollToButton from "../ui/gsap-scroll-to-button";
 import Marquee from "../animating-wrappers/text-marquee";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -55,7 +54,7 @@ const ResultsContent = () => {
   const voterRecord = useQuery(api.voters.getMyVoterRecord);
   const isLoadingUser = voterRecord === undefined;
 
-  const totalVotesCasted = slotCountDocs?.reduce((acc, doc) => acc + (doc.voteCount || 0), 0) ?? 0;
+  const totalVotesCasted = slotCountDocs?.reduce((acc: number, doc: { voteCount: number }) => acc + (doc.voteCount || 0), 0) ?? 0;
 
   const userData = voterRecord || {
     name: isLoadingUser ? "Loading..." : "You haven't voted yet 👋",
@@ -87,9 +86,9 @@ const ResultsContent = () => {
   );
 
   // Normalization for legacy data
-  const normalizedSelectedSlots = userData.selectedSlots.map((slotId) => {
+  const normalizedSelectedSlots: string[] = userData.selectedSlots.map((slotId: string) => {
     if (slotId.includes("|")) {
-      const parts = slotId.split("|").map((p) => p.trim());
+      const parts = slotId.split("|").map((p: string) => p.trim());
       if (parts.length === 3) {
         const [day, theaterName, time] = parts;
         // Search for matching clinic in THEATERS to get ID
@@ -799,30 +798,30 @@ const ResultsContent = () => {
               )}
             </div>
           </div>
-
-          <div className="p-8 border-2 border-dashed border-zinc-200 rounded-[32px] text-center space-y-2">
-            <p className="text-zinc-500 font-medium">
-              Want to invite a friend?
-            </p>
-            <p className="text-sm text-zinc-400">Share this page with them!</p>
-          </div>
         </div>
       </div>
 
       {/* Update Form Section */}
-      {activeUpdateForm && (
-        <div ref={formRef} className="pt-24 border-t border-zinc-200">
+      {voterRecord && activeUpdateForm && (
+        <div 
+          ref={formRef} 
+          className="pt-24 border-t border-zinc-200 animate-in fade-in slide-in-from-bottom-8 duration-700"
+        >
           {activeUpdateForm === "preferences" ? (
             <UpdatePreferencesForm
-              initialData={{ session: normalizedSelectedSlots }}
+              initialData={{ 
+                session: normalizedSelectedSlots,
+              }}
+              onSuccess={() => setActiveUpdateForm(null)}
             />
           ) : (
             <UpdateProfileForm
               initialData={{
-                name: userData.name,
-                phone: userData.phone,
-                email: userData.email,
+                name: voterRecord.name,
+                phone: voterRecord.phone,
+                email: voterRecord.email,
               }}
+              onSuccess={() => setActiveUpdateForm(null)}
             />
           )}
         </div>

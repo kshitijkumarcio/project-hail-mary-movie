@@ -7,9 +7,10 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { DAYS, THEATERS, SHOWTIMES_BY_THEATER, getSlotId } from "@/constants";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Mail, Clock } from "lucide-react";
 import FlipTextButton from "../ui/flip-text-button";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -26,15 +27,16 @@ interface UpdatePreferencesFormProps {
   initialData?: {
     session: string[];
   };
+  onSuccess?: () => void;
 }
 
 const UpdatePreferencesForm = ({
   initialData = {
     session: [],
   },
+  onSuccess,
 }: UpdatePreferencesFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUpdated, setIsUpdated] = useState(false);
 
   const {
     control,
@@ -51,41 +53,19 @@ const UpdatePreferencesForm = ({
     setIsSubmitting(true);
     try {
       await updateSelectedSlots({ newSlots: data.session });
-      setIsSubmitting(false);
-      setIsUpdated(true);
       toast.success("Preferences updated successfully!");
+      onSuccess?.();
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to update preferences.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isUpdated) {
-    return (
-      <div className="py-24 flex flex-col items-center justify-center text-center space-y-4">
-        <div className="relative w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle2 className="w-12 h-12 text-green-500 animate-in zoom-in duration-500" />
-        </div>
-        <h2 className="text-3xl font-bold tracking-tight">
-          Preferences Updated!
-        </h2>
-        <p className="text-zinc-500 text-lg max-w-md">
-          Your movie timings have been successfully updated. We've notified the
-          team.
-        </p>
-        <Button
-          onClick={() => window.location.reload()}
-          className="mt-6 rounded-2xl px-10 h-14 bg-black text-white hover:bg-zinc-800 font-bold"
-        >
-          View Live Results
-        </Button>
-      </div>
-    );
-  }
 
   return (
-    <div className="font-mona-sans bg-grid-dashed animate-in fade-in duration-700">
+    <div className="font-mona-sans animate-in fade-in duration-700">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
         {/* Left Side: Form Content */}
         <div className="lg:col-span-8 flex flex-col gap-10">
@@ -98,8 +78,7 @@ const UpdatePreferencesForm = ({
               )
             </p>
             <p className="text-zinc-600 mt-4 text-lg max-w-xl">
-              Changed your mind? No worries, Ryland. Update your preferred
-              screening slots here.
+              Changed your mind? Update your preferred screening slots here.
             </p>
           </div>
 
@@ -112,8 +91,7 @@ const UpdatePreferencesForm = ({
               <FieldLabel className="text-2xl flex flex-col items-start font-mona-sans font-bold text-black opacity-100">
                 [01] &nbsp; Choose new movie slot(s)
                 <p className="text-zinc-500 text-lg font-medium font-mona-sans max-w-xl">
-                  You can select multiple slots. Your previous choices will be
-                  replaced.
+                  You can select multiple slots. Previous choices will be correctly adjusted.
                 </p>
               </FieldLabel>
               <Controller
@@ -145,7 +123,7 @@ const UpdatePreferencesForm = ({
                                 <div
                                   className={cn(
                                     "h-1 w-3",
-                                    theater.name === "Cinepolis: VR Mall"
+                                    theater.name.includes("VR Mall")
                                       ? "bg-green-500"
                                       : "bg-red-500",
                                   )}
@@ -184,8 +162,7 @@ const UpdatePreferencesForm = ({
                                           <div
                                             className={cn(
                                               "rounded-full h-2 w-2",
-                                              theater.name ===
-                                                "Cinepolis: VR Mall"
+                                              theater.name.includes("VR Mall")
                                                 ? "bg-green-500"
                                                 : "bg-red-500",
                                             )}
@@ -227,14 +204,13 @@ const UpdatePreferencesForm = ({
             </Field>
 
             <p className="text-2xl mt-12 flex flex-col items-start font-mona-sans font-bold text-black opacity-100">
-              [02] &nbsp; Confirm changes
+              [02] &nbsp; Confirm update
               <span className="text-zinc-500 mt-2 text-lg font-medium font-mona-sans max-w-xl">
-                Ready to update your vote? This will overwrite your previous
-                selections.
+                Ready to save your new selections? This will update the community rankings.
               </span>
             </p>
 
-            <Button
+             <Button
               type="submit"
               size="lg"
               className={cn(

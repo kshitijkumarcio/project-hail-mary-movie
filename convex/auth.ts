@@ -18,6 +18,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
     baseURL: siteUrl,
     trustedOrigins: [
       siteUrl,
+      "http://localhost:3000",
       "https://*.vercel.app", // Allow all vercel deployments for previews
     ],
     database: authComponent.adapter(ctx),
@@ -27,14 +28,19 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         // Custom OTP generation: 8 character alphanumeric secret like Linear App
         generateOTP: () => {
           const charSet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Excluding confusing chars: 0, O, I, 1
-          return Array.from({ length: 8 }, () => charSet.charAt(Math.floor(Math.random() * charSet.length))).join("");
+          return Array.from({ length: 8 }, () =>
+            charSet.charAt(Math.floor(Math.random() * charSet.length)),
+          ).join("");
         },
         otpLength: 8,
         async sendVerificationOTP({ email, otp, type }) {
           console.log(`[Better Auth] Sending OTP to ${email}: ${otp}`);
           try {
             const resend = new Resend(process.env.RESEND_API_KEY!);
-            console.log("[Better Auth] Resend API Key available:", !!process.env.RESEND_API_KEY);
+            console.log(
+              "[Better Auth] Resend API Key available:",
+              !!process.env.RESEND_API_KEY,
+            );
             const { data, error } = await resend.emails.send({
               // ⚠️ IMPORTANT: Replace 'your-domain.com' with the exact domain you just verified on Resend!
               from: "Project Hail Mary Movie Night <namaste@mortalandhaven.com>",
@@ -42,7 +48,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
               subject: "Your Vote Verification Code",
               text: `Your Project Hail Mary Movie Night vote verification code is: ${otp}`,
             });
-            
+
             if (error) {
               console.error("[Better Auth] Resend sending failed:", error);
             } else {

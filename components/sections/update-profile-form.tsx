@@ -4,9 +4,7 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import Image from "next/image";
 import { toast } from "sonner";
-import { images } from "@/constants";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
@@ -36,6 +34,7 @@ interface UpdateProfileFormProps {
     phone: string;
     email: string;
   };
+  onSuccess?: () => void;
 }
 
 const UpdateProfileForm = ({
@@ -44,6 +43,7 @@ const UpdateProfileForm = ({
     phone: "",
     email: "",
   },
+  onSuccess,
 }: UpdateProfileFormProps) => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
@@ -51,7 +51,6 @@ const UpdateProfileForm = ({
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [enteredCode, setEnteredCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUpdated, setIsUpdated] = useState(false);
 
   const {
     control,
@@ -97,7 +96,7 @@ const UpdateProfileForm = ({
   const handleVerifyCode = async () => {
     setIsVerifyingCode(true);
     try {
-      const { data, error } = await authClient.signIn.emailOtp({
+      const { error } = await authClient.signIn.emailOtp({
         email: getValues("email"),
         otp: enteredCode,
       });
@@ -131,8 +130,8 @@ const UpdateProfileForm = ({
         name: data.name,
         phone: data.phone,
       });
-      setIsUpdated(true);
       toast.success("Profile updated successfully!");
+      onSuccess?.();
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to update profile.");
@@ -141,42 +140,21 @@ const UpdateProfileForm = ({
     }
   };
 
-  if (isUpdated) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center space-y-4">
-        <div className="relative w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle2 className="w-12 h-12 text-green-500 animate-in zoom-in duration-500" />
-        </div>
-        <h2 className="text-3xl font-bold tracking-tight">Profile Updated!</h2>
-        <p className="text-zinc-500 text-lg max-w-md">
-          Your personal details have been updated in our database.
-        </p>
-        <Button
-          onClick={() => window.location.reload()}
-          className="mt-6 rounded-2xl px-10 h-14 bg-black text-white hover:bg-zinc-800 font-bold"
-        >
-          View Live Results
-        </Button>
-      </div>
-    );
-  }
 
   return (
-    <div className="font-mona-sans bg-grid-dashed animate-in fade-in duration-700">
+    <div className="font-mona-sans animate-in fade-in duration-700">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-        {/* Left Side: Form Content */}
         <div className="lg:col-span-8 flex flex-col gap-10">
           <div>
             <p className="text-black font-mona-sans text-[48px] md:text-[60px] leading-tight font-bold">
-              (Update Details{" "}
+              (Update Profile{" "}
               <span className="inline-block -tracking-[4px] md:-tracking-[6px] translate-y-[-2px]">
                 ------
               </span>
               )
             </p>
             <p className="text-zinc-600 mt-4 text-lg max-w-xl">
-              We'll use these details to contact you once the final showtime is
-              decided.
+              Keep your contact information up to date.
             </p>
           </div>
 
@@ -184,13 +162,9 @@ const UpdateProfileForm = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-8 mt-10"
           >
-            {/* Contact Details */}
             <div className="flex flex-col gap-8">
               <p className="text-2xl flex flex-col items-start font-mona-sans font-bold text-black opacity-100">
-                [01] &nbsp; Update contact details
-                <span className="text-zinc-500 mt-2 text-lg font-medium font-mona-sans max-w-xl">
-                  Keep your info fresh.
-                </span>
+                [01] &nbsp; Basic Information
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -207,7 +181,7 @@ const UpdateProfileForm = ({
                         <Input
                           {...field}
                           className="pl-12 h-14 rounded-2xl border-zinc-200 bg-white focus-visible:bg-white transition-all font-mona-sans font-semibold"
-                          placeholder="Ryland Grace"
+                          placeholder="Your Name"
                         />
                       )}
                     />
@@ -255,16 +229,12 @@ const UpdateProfileForm = ({
             </div>
 
             <p className="text-2xl mt-12 flex flex-col items-start font-mona-sans font-bold text-black opacity-100">
-              [02] &nbsp; Verify identity
-              <span className="text-zinc-500 mt-2 text-lg font-medium font-mona-sans max-w-xl">
-                Security first. We'll send you a code.
-              </span>
+              [02] &nbsp; Identity Verification
             </p>
 
-            {/* Email Verification Component */}
             <Field>
               <FieldLabel className="font-medium text-lg text-zinc-800">
-                Email Address
+                Verify Email
               </FieldLabel>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -278,7 +248,6 @@ const UpdateProfileForm = ({
                           {...field}
                           className="pl-12 h-14 rounded-2xl border-zinc-200 bg-white focus-visible:bg-white font-mona-sans font-semibold transition-all text-base disabled:bg-zinc-50 disabled:opacity-70"
                           type="email"
-                          placeholder="rylandgrace@gmail.com"
                           disabled={isEmailVerified || isCodeSent}
                         />
                       )}
@@ -334,7 +303,7 @@ const UpdateProfileForm = ({
                         {isVerifyingCode ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
-                          "Verify Identity"
+                          "Verify"
                         )}
                       </FlipTextButton>
                     </Button>
@@ -359,7 +328,7 @@ const UpdateProfileForm = ({
                 {isSubmitting ? (
                   <div className="flex items-center gap-3">
                     <Loader2 className="w-6 h-6 animate-spin" />
-                    Updating profile...
+                    Updating Profile...
                   </div>
                 ) : (
                   "Confirm Profile Update"
