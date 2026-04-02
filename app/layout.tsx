@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 import { ResponsiveGuard } from "@/components/responsive-guard";
 import { ConvexClientProvider } from "@/providers/ClientConvexProvider";
 import { GSAPProvider } from "@/providers/gsap-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -56,6 +57,7 @@ export default function RootLayout({
                 <ResponsiveGuard />
                 <Navbar />
                 {children}
+                <Toaster />
               </TooltipProvider>
             </ConvexClientProvider>
           </LenisProvider>

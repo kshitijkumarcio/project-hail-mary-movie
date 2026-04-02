@@ -1,6 +1,10 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import { toast } from "sonner";
 
 const Instructions = () => {
   const before = `before:absolute before:content-[" "] before:-left-0 before:-bottom-[1px] before:block before:w-[100%] before:h-[1px] before:bg-zinc-600 before:duration-1000 before:transition-all before:cubic-bezier(0.19, 1, 0.22, 1) before:scale-x-0 before:origin-left hover:before:scale-x-100 hover:before:delay-300`;
@@ -109,6 +113,26 @@ const Instructions = () => {
           </div>
         </div>
       </div>
+
+      {/* <div className="mt-10">
+        <button
+          type="button"
+          onClick={() =>
+            toast.success("Toast is successful!", {
+              style: {
+                backgroundColor: "black",
+                color: "white",
+                borderRadius: 12,
+                gap: 16,
+              },
+              icon: <CheckCircle2 className="text-green-600" />,
+            })
+          }
+          className="active:bg-black/40 p-4 bg-black rounded-full cursor-pointer"
+        >
+          <p className="text-white">Send a dost</p>
+        </button>
+      </div> */}
     </div>
   );
 };
