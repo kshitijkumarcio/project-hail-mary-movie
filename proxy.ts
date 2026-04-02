@@ -1,7 +1,7 @@
 import { NextResponse, userAgent } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Extract device information from the incoming request
   const { device } = userAgent(request);
 
