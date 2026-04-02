@@ -499,7 +499,7 @@ const ATF = () => {
       {/* message */}
       <div className="absolute 2xl:top-[63.5svh] top-[64.5svh] left-1/2 -translate-x-1/2 flex flex-col justify-center gap-1 items-center">
         <p className="text-lg font-mona-sans text-zinc-600 max-w-[540px] font-medium tracking-wide text-center">
-          👋🏼 Hey there! We fellow Swapbookers are going to watch Project Hail
+          👋🏼 Hey there! We fellow bookworms are going to watch Project Hail
           Mary this weekend. Would you like to join us?
         </p>
 

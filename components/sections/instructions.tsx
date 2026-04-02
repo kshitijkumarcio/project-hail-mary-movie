@@ -57,7 +57,7 @@ const Instructions = () => {
           </p>
           <p className="text-zinc-600 text-lg mt-2 max-w-xl">
             This is not limited to just Swapbook members, you can invite anyone
-            you want to, regardless of if they are part of Swapbook or not. Just
+            you want to, regardless of if they are part of the bookclub or not. Just
             share this page with them.
           </p>
         </div>
