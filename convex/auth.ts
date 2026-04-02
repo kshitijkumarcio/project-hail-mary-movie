@@ -77,7 +77,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
             `;
 
             const { data, error } = await resend.emails.send({
-              from: "PHM Movie Night <namaste@mortalandhaven.com>",
+              from: "PHM Movie Night <kshitijkumar@mortalandhaven.com>",
               to: email,
               subject: `${otp} — Your PHM Movie Night Code`,
               text: `Your PHM Movie Night verification code is: ${otp}. It expires in 5 minutes.`,
