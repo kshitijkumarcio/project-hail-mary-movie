@@ -317,9 +317,10 @@ const UpdateProfileForm = ({
                       </div>
                       <Input
                         value={enteredCode}
-                        onChange={(e) => setEnteredCode(e.target.value)}
+                        onChange={(e) => setEnteredCode(e.target.value.toUpperCase())}
                         className="pl-16 h-14 rounded-2xl border-zinc-200 bg-white focus-visible:bg-white transition-all text-base font-mono uppercase tracking-widest"
                         placeholder="••••••••"
+                        maxLength={8}
                         autoFocus
                       />
                     </div>

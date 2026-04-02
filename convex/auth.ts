@@ -16,10 +16,20 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     baseURL: siteUrl,
+    trustedOrigins: [
+      siteUrl,
+      "https://*.vercel.app", // Allow all vercel deployments for previews
+    ],
     database: authComponent.adapter(ctx),
     plugins: [
       convex({ authConfig }),
       emailOTP({
+        // Custom OTP generation: 8 character alphanumeric secret like Linear App
+        generateOTP: () => {
+          const charSet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Excluding confusing chars: 0, O, I, 1
+          return Array.from({ length: 8 }, () => charSet.charAt(Math.floor(Math.random() * charSet.length))).join("");
+        },
+        otpLength: 8,
         async sendVerificationOTP({ email, otp, type }) {
           console.log(`[Better Auth] Sending OTP to ${email}: ${otp}`);
           try {

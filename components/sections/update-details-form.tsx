@@ -71,8 +71,8 @@ const UpdateDetailsForm = ({
   };
 
   const handleVerifyCode = async () => {
-    if (enteredCode.toLowerCase() !== "de408ddf") {
-      toast.error("Invalid verification code. Try 'de408ddf'");
+    if (enteredCode.toUpperCase() !== "DE408DDF") {
+      toast.error("Invalid verification code. Try 'DE408DDF'");
       return;
     }
 
@@ -340,9 +340,10 @@ const UpdateDetailsForm = ({
                   </div>
                   <Input
                     value={enteredCode}
-                    onChange={(e) => setEnteredCode(e.target.value)}
+                    onChange={(e) => setEnteredCode(e.target.value.toUpperCase())}
                     className="pl-16 h-14 rounded-2xl border-zinc-200 bg-white uppercase tracking-[0.2em] font-mono"
                     placeholder="••••••••"
+                    maxLength={8}
                   />
                 </div>
                 <Button
