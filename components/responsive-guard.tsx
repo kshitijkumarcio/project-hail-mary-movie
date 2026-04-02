@@ -7,7 +7,7 @@ import { useMediaQuery } from "@/hooks/layout-hooks/useMediaQuery";
 import { usePathname } from "next/navigation";
 
 export const ResponsiveGuard = ({ children }: { children: React.ReactNode }) => {
-  const isDesktop = useMediaQuery("(min-width: 1300px)");
+  const isDesktop = useMediaQuery("(min-width: 1160px)");
   const [showOverlay, setShowOverlay] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
