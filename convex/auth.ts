@@ -38,42 +38,98 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
           try {
             const resend = new Resend(process.env.RESEND_API_KEY!);
 
+            // Fully responsive HTML Template
             const htmlContent = `
-              <div style="background-color: #f5f5f5; padding: 60px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-                <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; border: 1px solid #e8e8e8; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
-                  
-                  <!-- Black Header -->
-                  <div style="background-color: #000000; padding: 32px 40px; text-align: center;">
-                    <p style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 2px;">Project Hail Mary &bull; Movie Night</p>
-                    <p style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 0; text-transform: uppercase; letter-spacing: 1.5px;">Verification Code</p>
-                  </div>
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Verification Code</title>
+                <style>
+                  /* Mobile Specific Styles */
+                  @media only screen and (max-width: 480px) {
+                    .email-container {
+                      width: 100% !important;
+                      max-width: 100% !important;
+                      border-radius: 0 !important;
+                      border: none !important;
+                    }
+                    .wrapper-td {
+                      padding: 0 !important;
+                    }
+                    .header-footer {
+                      padding: 24px 20px !important;
+                    }
+                    .content-body {
+                      padding: 40px 20px !important;
+                    }
+                    .code-box {
+                      padding: 15px 20px !important;
+                      border-right-width: 4px !important;
+                      border-bottom-width: 4px !important;
+                    }
+                    .code-text {
+                      font-size: 32px !important;
+                      letter-spacing: 5px !important;
+                    }
+                  }
+                </style>
+              </head>
+              <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+                
+                <!-- 100% Width Wrapper Table -->
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
+                  <tr>
+                    <td align="center" style="padding: 60px 20px;" class="wrapper-td">
+                      
+                      <!-- Inner Email Container Table -->
+                      <table border="0" cellspacing="0" cellpadding="0" class="email-container" style="max-width: 500px; width: 100%; background-color: #ffffff; border-radius: 32px; overflow: hidden; border: 1px solid #e8e8e8; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
+                        
+                        <!-- Black Header -->
+                        <tr>
+                          <td class="header-footer" style="background-color: #000000; padding: 32px 40px; text-align: center;">
+                            <p style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 2px;">Project Hail Mary &bull; Movie Night</p>
+                            <p style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 0; text-transform: uppercase; letter-spacing: 1.5px;">Verification Code</p>
+                          </td>
+                        </tr>
 
-                  <!-- Body -->
-                  <div style="padding: 48px 40px; text-align: center;">
-                    <p style="font-size: 15px; color: #666666; margin: 0 auto 40px auto; line-height: 1.7; max-width: 320px;">
-                      Confirm your preferences for the <strong style="color: #000;">Project Hail Mary Movie Night</strong> using the code below.
-                    </p>
-                    
-                    <!-- 3D Code Box -->
-                    <div style="display: inline-block; background-color: #ffffff; border: 2px solid #000000; border-right-width: 6px; border-bottom-width: 6px; border-radius: 16px; padding: 20px 48px; margin-bottom: 16px;">
-                      <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #000000;">${otp}</span>
-                    </div>
-                    <p style="font-size: 12px; color: #aaaaaa; margin: 0 0 40px 0;">Tap &amp; hold to copy</p>
-                    
-                    <!-- Footer note -->
-                    <div style="border-top: 1px solid #eeeeee; padding-top: 28px;">
-                      <p style="font-size: 13px; color: #aaaaaa; margin: 0 auto; line-height: 1.7; max-width: 300px;">
-                        This code expires in <strong style="color: #888;">5 minutes</strong>. If you didn't request this, you can safely ignore this email.
-                      </p>
-                    </div>
-                  </div>
+                        <!-- Body -->
+                        <tr>
+                          <td class="content-body" style="padding: 48px 40px; text-align: center;">
+                            <p style="font-size: 15px; color: #666666; margin: 0 auto 40px auto; line-height: 1.7; max-width: 320px;">
+                              Confirm your preferences for the <strong style="color: #000;">Project Hail Mary Movie Night</strong> using the code below.
+                            </p>
+                            
+                            <!-- 3D Code Box -->
+                            <div class="code-box" style="display: inline-block; background-color: #ffffff; border: 2px solid #000000; border-right-width: 6px; border-bottom-width: 6px; border-radius: 16px; padding: 20px 48px; margin-bottom: 16px;">
+                              <span class="code-text" style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #000000;">${otp}</span>
+                            </div>
+                            <p style="font-size: 12px; color: #aaaaaa; margin: 0 0 40px 0;">Tap &amp; hold to copy</p>
+                            
+                            <!-- Footer note -->
+                            <div style="border-top: 1px solid #eeeeee; padding-top: 28px;">
+                              <p style="font-size: 13px; color: #aaaaaa; margin: 0 auto; line-height: 1.7; max-width: 300px;">
+                                This code expires in <strong style="color: #888;">5 minutes</strong>. If you didn't request this, you can safely ignore this email.
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
 
-                  <!-- Black Footer -->
-                  <div style="background-color: #000000; padding: 24px 40px; text-align: center;">
-                    <p style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); margin: 0; text-transform: uppercase; letter-spacing: 2px;">Project Hail Mary &bull; Movie Night</p>
-                  </div>
-                </div>
-              </div>
+                        <!-- Black Footer -->
+                        <tr>
+                          <td class="header-footer" style="background-color: #000000; padding: 24px 40px; text-align: center;">
+                            <p style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); margin: 0; text-transform: uppercase; letter-spacing: 2px;">Project Hail Mary &bull; Movie Night</p>
+                          </td>
+                        </tr>
+                        
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+              </body>
+              </html>
             `;
 
             const { data, error } = await resend.emails.send({
