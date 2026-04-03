@@ -178,3 +178,22 @@ export const updateProfile = mutation({
     await ctx.db.patch(record._id, { name, phone, updatedAt: Date.now() });
   },
 });
+
+/**
+ * Fetch all voters and slot counts for the dashboard.
+ */
+export const getDashboardData = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    // Fetch all voters who have voted
+    const voters = await ctx.db
+      .query("voters")
+      .withIndex("by_voted", (q) => q.eq("voted", true))
+      .collect();
+
+    return voters;
+  },
+});
